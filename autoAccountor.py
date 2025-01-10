@@ -2,7 +2,7 @@
 Author: shysgsg 1054733568@qq.com
 Date: 2025-01-10 17:13:47
 LastEditors: shysgsg 1054733568@qq.com
-LastEditTime: 2025-01-10 20:57:59
+LastEditTime: 2025-01-11 00:27:37
 FilePath: \autoAccountor\autoAccountor.py
 Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 '''
@@ -39,8 +39,7 @@ def readInfo(file_path):
                 # 提取3.2大球库存信息，并将其转换为整数
                 big_ball_3_2_str = line.strip().split("3.2大球库存：")[1].replace("包", "")
                 data['big_ball_3_2_stock'] = int(big_ball_3_2_str)
-    write_log_append(f"Current Info: {data}")
-    write_log_overwrite(f"Current Info: {data}")
+    log_current_info(data, log_type="all")
     return data
 
 def locate_chat_record(chat_record_path, time):
@@ -55,8 +54,8 @@ def locate_chat_record(chat_record_path, time):
             try:
                 record_time = datetime.datetime.strptime(record_time_str, "%Y-%m-%d %H:%M:%S")
                 if record_time > target_time:
-                    write_log_append(f"Start Line: {i}")
-                    write_log_overwrite(f"Start Line: {i}")
+                    # write_log_append(f"Start Line: {i}")
+                    # write_log_overwrite(f"Start Line: {i}")
                     return i
             except ValueError:
                 continue
@@ -64,13 +63,29 @@ def locate_chat_record(chat_record_path, time):
 
 def write_log_append(message, newline=True):
     if LOGGING_APPEND_ENABLED:
-        with open("log_append.txt", "a", encoding="utf-8") as log_file:
+        with open("log/log_append.txt", "a", encoding="utf-8") as log_file:
             log_file.write(message + ("\n" if newline else "  "))
 
 def write_log_overwrite(message, mode="a", newline=True):
     if LOGGING_OVERWRITE_ENABLED:
-        with open("log_overwrite.txt", mode, encoding="utf-8") as log_file:
+        with open("log/log_overwrite.txt", mode, encoding="utf-8") as log_file:
             log_file.write(message + ("\n" if newline else "  "))
+
+def log_current_info(data, log_type="all"):
+    info_str = (
+        f"截止 {data['time']}\n"
+        f"账户余额：{data['balance']}元\n"
+        f"小球库存：{data['small_ball_stock']}包\n"
+        f"2.5大球库存：{data['big_ball_2_5_stock']}包\n"
+        f"3.2大球库存：{data['big_ball_3_2_stock']}包"
+    )
+    if log_type == "all":
+        write_log_append(info_str)
+        write_log_overwrite(info_str)
+    elif log_type == "append":
+        write_log_append(info_str)
+    elif log_type == "overwrite":
+        write_log_overwrite(info_str)
 
 def determine_message_type(line):
     if re.search(r'收.*\d+元', line):
@@ -100,6 +115,7 @@ def extract_number(line):
     return 0
 
 def process_single_line(line):
+    global current_info
     message_type = determine_message_type(line)
     if message_type == 'income':
         amount = extract_number(line)
@@ -142,10 +158,9 @@ def process_single_line(line):
         write_log_append(f"big_ball_3_2_out: {quantity}")
         write_log_overwrite(f"big_ball_3_2_out: {quantity}")
     else:
-        error_message = f"Error: Unknown message type for line: {line}"
-        print(f"\033[91m{error_message}\033[0m")
-        write_log_append(error_message)
-        write_log_overwrite(error_message)
+        print(f"\033[91mError: Unknown message type for line: {line}\033[0m")
+        write_log_append("Error: Unknown message type")
+        write_log_overwrite("Error: Unknown message type")
 
 def is_time_line(line):
     # Match lines that start with a date in the format YYYY-MM-DD HH:MM:SS
@@ -154,30 +169,44 @@ def is_time_line(line):
 def process_chat_record(chat_record_path, target_time):
     start_line = locate_chat_record(chat_record_path, target_time)
     if start_line == -1:
-        write_log_append("No records found after the target time.")
-        write_log_overwrite("No records found after the target time.")
+        write_log_append("No records found after the target time.\n\n\n")
+        write_log_overwrite("No records found after the target time.\n\n\n")
         return
     with open(chat_record_path, 'r', encoding='utf-8') as file:
         lines = file.readlines()
         for i in range(start_line, len(lines)):
             line = lines[i].strip()
-            if line and not is_time_line(line):
-                write_log_append(line, newline=False)
-                write_log_overwrite(line, newline=False)
+            match = re.match(r'^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}', line)
+            if match:
+                current_info['time'] = match.group(0)  # Update the current information's time
+            elif line:
+                write_log_append(f"{current_info['time']} {line}", newline=False)
+                write_log_overwrite(f"{current_info['time']} {line}", newline=False)
                 process_single_line(line)
-    write_log_append("")  # Add a blank line at the end of each run
+    write_log_append("\n\n\n")  # Add a blank line at the end of each run
     write_log_overwrite("", mode="a")  # Add a blank line at the end of each run
+
+def write_current_info(file_path, data):
+    with open(file_path, 'w', encoding='utf-8') as file:
+        file.write(
+            f"截止 {data['time']}\n"
+            f"账户余额：{data['balance']}元\n"
+            f"小球库存：{data['small_ball_stock']}包\n"
+            f"2.5大球库存：{data['big_ball_2_5_stock']}包\n"
+            f"3.2大球库存：{data['big_ball_3_2_stock']}包\n"
+        )
 
 def main():
     global current_info
-    current_info_path = "当前信息.txt"
-    chat_record_path = "聊天记录.txt"
+    current_info_path = "info/当前信息.txt"
+    chat_record_path = "info/聊天记录.txt"
     if LOGGING_OVERWRITE_ENABLED:
-        with open("log_overwrite.txt", "w", encoding="utf-8") as log_file:
+        with open("log/log_overwrite.txt", "w", encoding="utf-8") as log_file:
             log_file.write("")  # Clear the file at the start of each run
     current_info = readInfo(current_info_path)
     process_chat_record(chat_record_path, current_info['time'])
-    
+    log_current_info(current_info, log_type="overwrite")
+    write_current_info(current_info_path, current_info)
 
 if __name__ == "__main__":
     main()
