@@ -2,7 +2,7 @@
 Author: shysgsg 1054733568@qq.com
 Date: 2025-01-10 22:58:25
 LastEditors: shysgsg 1054733568@qq.com
-LastEditTime: 2025-01-11 00:20:37
+LastEditTime: 2025-01-12 01:17:47
 FilePath: \autoAccountor\gui.py
 Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 '''
@@ -14,7 +14,7 @@ from tkinter import ttk
 
 def run_script():
     try:
-        result = subprocess.run(['python', 'F:/autoAccountor/autoAccountor.py'], capture_output=True, text=True)
+        result = subprocess.run(['python', 'F:/autoAccountor/autoAccountor.py'], capture_output=True, text=True, encoding='utf-8')
         if result.returncode == 0:
             messagebox.showinfo("Success", "Script executed successfully:\n" + result.stdout)
             update_log_overwrite_display()  # Update log_overwrite display after running the script
@@ -43,7 +43,7 @@ def open_current_info():
 
 def open_chat_record():
     try:
-        os.startfile('F:/autoAccountor/info/聊天记录.txt')
+        os.startfile('D:/MemoTrace/data/聊天记录/聚财浮球报账群(34375022090@chatroom)/聚财浮球报账群.txt')
     except Exception as e:
         messagebox.showerror("Error", f"Failed to open chat record file:\n{str(e)}")
 
@@ -78,19 +78,19 @@ button_frame.pack(pady=10)
 run_button = ttk.Button(button_frame, text="更新记账", command=run_script)
 run_button.pack(side=tk.LEFT, padx=5)
 
-open_folder_button = ttk.Button(button_frame, text="打开 customers 文件夹", command=open_customers_folder)
+open_folder_button = ttk.Button(button_frame, text="打开 客户文件夹", command=open_customers_folder)
 open_folder_button.pack(side=tk.LEFT, padx=5)
 
-open_log_button = ttk.Button(button_frame, text="打开 log_append.txt", command=open_log_append)
+open_log_button = ttk.Button(button_frame, text="打开 日志文件", command=open_log_append)
 open_log_button.pack(side=tk.LEFT, padx=5)
 
-open_info_button = ttk.Button(button_frame, text="打开 当前信息.txt", command=open_current_info)
+open_info_button = ttk.Button(button_frame, text="打开 当前信息", command=open_current_info)
 open_info_button.pack(side=tk.LEFT, padx=5)
 
-open_chat_button = ttk.Button(button_frame, text="打开 聊天记录.txt", command=open_chat_record)
+open_chat_button = ttk.Button(button_frame, text="打开 聊天记录", command=open_chat_record)
 open_chat_button.pack(side=tk.LEFT, padx=5)
 
-display_text = tk.Text(app, height=20, width=80, font=("Helvetica", 14))
+display_text = tk.Text(app, height=20, width=80, font=("Helvetica", 12))
 display_text.pack(pady=50, padx=150, fill=tk.BOTH, expand=True)
 
 update_current_info_display()
