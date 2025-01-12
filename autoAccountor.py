@@ -25,15 +25,17 @@ LOGGING_APPEND_ENABLED = True
 LOGGING_OVERWRITE_ENABLED = True
 
 def show_error_prompt(error_message):
+    """Show an error prompt with the option to ignore and continue."""
     return messagebox.askyesno("错误", f"{error_message}\n是否忽略错误并继续执行？")
 
 def readInfo(file_path):
+    """Read current information from the specified file and return it as a dictionary."""
     data = {}
     with open(file_path, 'r', encoding='utf-8') as file:
         lines = file.readlines()
         for line in lines:
             if "截止" in line:
-                # 提取时间信息
+                # Extract time information
                 time_str = line.strip().split("截止 ")[1]
                 try:
                     datetime.datetime.strptime(time_str, "%Y-%m-%d %H:%M:%S")
@@ -43,21 +45,22 @@ def readInfo(file_path):
                     if not show_error_prompt(error_message):
                         raise ValueError(error_message)
             elif "账户余额" in line:
-                # 提取账户余额信息，并将其转换为整数
+                # Extract account balance information and convert to integer
                 balance_str = line.strip().split("账户余额：")[1].replace("元", "")
                 data['balance'] = int(balance_str)
             elif "小球库存" in line:
-                # 提取小球库存信息，并将其转换为整数
+                # Extract small ball stock information and convert to integer
                 small_ball_str = line.strip().split("小球库存：")[1].replace("包", "")
                 data['small_ball_stock'] = int(small_ball_str)
             elif "大球库存" in line:
-                # 提取2.5大球库存信息，并将其转换为整数
+                # Extract big ball stock information and convert to integer
                 big_ball_2_5_str = line.strip().split("大球库存：")[1].replace("包", "")
                 data['big_ball_stock'] = int(big_ball_2_5_str)
     log_current_info(data, log_type="overwrite")
     return data
 
 def locate_chat_record(chat_record_path, time):
+    """Locate the chat record line that is after the specified time."""
     target_time = datetime.datetime.strptime(time, "%Y-%m-%d %H:%M:%S")
     with open(chat_record_path, 'r', encoding='utf-8') as file:
         lines = file.readlines()
@@ -75,6 +78,7 @@ def locate_chat_record(chat_record_path, time):
     return -1
 
 def write_log_append(message, newline=True, fixed_length=None):
+    """Write a message to the append log file."""
     if LOGGING_APPEND_ENABLED:
         with open("log/log_append.txt", "a", encoding="utf-8") as log_file:
             if fixed_length:
@@ -82,6 +86,7 @@ def write_log_append(message, newline=True, fixed_length=None):
             log_file.write(message + ("\n" if newline else ""))
 
 def write_log_overwrite(message, mode="a", newline=True, fixed_length=None):
+    """Write a message to the overwrite log file."""
     if LOGGING_OVERWRITE_ENABLED:
         with open("log/log_overwrite.txt", mode, encoding="utf-8") as log_file:
             if fixed_length:
@@ -89,6 +94,7 @@ def write_log_overwrite(message, mode="a", newline=True, fixed_length=None):
             log_file.write(message + ("\n" if newline else ""))
 
 def adjust_to_fixed_length(message, fixed_length):
+    """Adjust the message to a fixed length by padding or truncating."""
     current_length = wcswidth(message)
     if current_length < fixed_length:
         message = message.ljust(fixed_length - current_length + len(message))
@@ -98,6 +104,7 @@ def adjust_to_fixed_length(message, fixed_length):
     return message
 
 def log_current_info(data, log_type="all"):
+    """Log the current information to the specified log type."""
     info_str = (
         f"截止 {data['time']}\n"
         f"账户余额：{data['balance']}元\n"
@@ -113,6 +120,7 @@ def log_current_info(data, log_type="all"):
         write_log_overwrite(info_str)
 
 def write_current_info(file_path, data):
+    """Write the current information to the specified file."""
     with open(file_path, 'w', encoding='utf-8') as file:
         file.write(
             f"截止 {data['time']}\n"
@@ -123,7 +131,7 @@ def write_current_info(file_path, data):
         )
 
 def extract_number(text):
-    # Create a copy of the text to avoid modifying the original message
+    """Extract the first number found in the text."""
     text_copy = re.sub(r'\d{1,2}\.\d{1,2}|\d+年', '', text)
     match = re.search(r'\d+', text_copy)
     if match:
@@ -131,6 +139,7 @@ def extract_number(text):
     return 0
 
 def process_message(line):
+    """Process a single message line and update the current information."""
     global current_info
     quantity = 0
     log_message = None
@@ -230,6 +239,7 @@ def process_message(line):
                 raise ValueError(error_message)
 
 def extract_customer_name(text):
+    """Extract the customer name from the text."""
     text_copy = re.sub(r'\d{1,2}\.\d{1,2}号|\d+年| |3.2|2.5|球|款|浮', '', text)
     match = re.search(r'发(\w+?)(?=\d|$)|收(\w+?)(?=\d|$)', text_copy)
     if match:
@@ -243,12 +253,14 @@ def extract_customer_name(text):
     return None
 
 def extract_date(text):
+    """Extract the date from the text."""
     match = re.search(r'\d{1,2}\.\d{1,2}|\d{1,2},\d{1,2}', text)
     if match:
         return match.group(0)
     return None
 
 def log_to_customer_file(customer_name, message, line):
+    """Log the message to the customer's file."""
     date = extract_date(line)
     if date:
         formatted_message = f"{date}号 {message}"
@@ -260,9 +272,11 @@ def log_to_customer_file(customer_name, message, line):
         file.write(formatted_message + '\n')
 
 def is_time_line(line):
+    """Check if the line contains a timestamp."""
     return re.match(r'^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}', line) is not None
 
 def process_chat_record(chat_record_path, target_time):
+    """Process the chat record and update the current information."""
     skip_processing = False
     start_line = locate_chat_record(chat_record_path, target_time)
     if start_line == -1:
@@ -290,10 +304,12 @@ def process_chat_record(chat_record_path, target_time):
     write_log_overwrite("", mode="a")
 
 def get_log_line_count(log_file_path):
+    """Get the number of lines in the log file."""
     with open(log_file_path, 'r', encoding='utf-8') as log_file:
         return len(log_file.readlines())
 
 def truncate_log_file(log_file_path, line_count):
+    """Truncate the log file to the specified number of lines."""
     with open(log_file_path, 'r+', encoding='utf-8') as log_file:
         lines = log_file.readlines()
         log_file.seek(0)
@@ -301,6 +317,7 @@ def truncate_log_file(log_file_path, line_count):
         log_file.truncate()
 
 def backup_customer_files():
+    """Backup the contents of all customer files."""
     customer_files = {}
     for filename in os.listdir("customers"):
         if filename.endswith(".txt"):
@@ -310,11 +327,13 @@ def backup_customer_files():
     return customer_files
 
 def restore_customer_files(customer_files):
+    """Restore the contents of all customer files from the backup."""
     for file_path, lines in customer_files.items():
         with open(file_path, 'w', encoding='utf-8') as file:
             file.writelines(lines)
 
 def main():
+    """Main function to execute the script."""
     global current_info
     current_info_path = "info/当前信息.txt"
     chat_record_path = "D:/MemoTrace/data/聊天记录/聚财浮球报账群(34375022090@chatroom)/聚财浮球报账群.txt"

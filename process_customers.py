@@ -2,7 +2,7 @@
 Author: shysgsg 1054733568@qq.com
 Date: 2025-01-12 20:43:47
 LastEditors: shysgsg 1054733568@qq.com
-LastEditTime: 2025-01-12 20:44:18
+LastEditTime: 2025-01-13 00:16:19
 FilePath: \autoAccountor\process_customers.py
 Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 '''
@@ -13,6 +13,7 @@ import sys
 sys.stdout.reconfigure(encoding='utf-8')
 
 def process_customer_file(file_path):
+    """Process a single customer file and return the total number of packages."""
     total = 0
     with open(file_path, 'r', encoding='utf-8') as file:
         lines = file.readlines()
@@ -23,6 +24,7 @@ def process_customer_file(file_path):
     return total
 
 def process_all_customers(folder_path):
+    """Process all customer files in the specified folder and return a dictionary of totals."""
     customer_totals = {}
     for filename in os.listdir(folder_path):
         if filename.endswith('.txt'):
@@ -32,6 +34,7 @@ def process_all_customers(folder_path):
     return customer_totals
 
 def main():
+    """Main function to process all customer files and print the totals."""
     folder_path = 'F:/autoAccountor/customers'
     customer_totals = process_all_customers(folder_path)
     for customer, total in customer_totals.items():
