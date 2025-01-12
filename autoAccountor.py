@@ -2,7 +2,7 @@
 Author: shysgsg 1054733568@qq.com
 Date: 2025-01-10 17:13:47
 LastEditors: shysgsg 1054733568@qq.com
-LastEditTime: 2025-01-12 23:16:45
+LastEditTime: 2025-01-13 00:03:01
 FilePath: \autoAccountor\autoAccountor.py
 Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 '''
@@ -54,7 +54,7 @@ def readInfo(file_path):
                 # 提取2.5大球库存信息，并将其转换为整数
                 big_ball_2_5_str = line.strip().split("大球库存：")[1].replace("包", "")
                 data['big_ball_stock'] = int(big_ball_2_5_str)
-    log_current_info(data, log_type="all")
+    log_current_info(data, log_type="overwrite")
     return data
 
 def locate_chat_record(chat_record_path, time):
@@ -266,9 +266,8 @@ def process_chat_record(chat_record_path, target_time):
     skip_processing = False
     start_line = locate_chat_record(chat_record_path, target_time)
     if start_line == -1:
-        write_log_append("No records found after the target time.\n\n\n")
-        write_log_overwrite("No records found after the target time.\n\n\n")
-        return
+        write_log_overwrite("未找到目标时间之后的记录。\n\n\n")
+        sys.exit(0)  # Safely exit the program
     with open(chat_record_path, 'r', encoding='utf-8') as file:
         lines = file.readlines()
         for i in range(start_line, len(lines)):
@@ -290,22 +289,56 @@ def process_chat_record(chat_record_path, target_time):
     write_log_append("\n\n\n")
     write_log_overwrite("", mode="a")
 
+def get_log_line_count(log_file_path):
+    with open(log_file_path, 'r', encoding='utf-8') as log_file:
+        return len(log_file.readlines())
+
+def truncate_log_file(log_file_path, line_count):
+    with open(log_file_path, 'r+', encoding='utf-8') as log_file:
+        lines = log_file.readlines()
+        log_file.seek(0)
+        log_file.writelines(lines[:line_count])
+        log_file.truncate()
+
+def backup_customer_files():
+    customer_files = {}
+    for filename in os.listdir("customers"):
+        if filename.endswith(".txt"):
+            file_path = os.path.join("customers", filename)
+            with open(file_path, 'r', encoding='utf-8') as file:
+                customer_files[file_path] = file.readlines()
+    return customer_files
+
+def restore_customer_files(customer_files):
+    for file_path, lines in customer_files.items():
+        with open(file_path, 'w', encoding='utf-8') as file:
+            file.writelines(lines)
+
 def main():
     global current_info
     current_info_path = "info/当前信息.txt"
     chat_record_path = "D:/MemoTrace/data/聊天记录/聚财浮球报账群(34375022090@chatroom)/聚财浮球报账群.txt"
+    
+    initial_append_log_lines = get_log_line_count("log/log_append.txt")
+    customer_files_backup = backup_customer_files()
+    
     if LOGGING_OVERWRITE_ENABLED:
         with open("log/log_overwrite.txt", "w", encoding="utf-8") as log_file:
             log_file.write("")
-    current_info = readInfo(current_info_path)
-    process_chat_record(chat_record_path, current_info['time'])
-    log_current_info(current_info, log_type="overwrite")
-
-if __name__ == "__main__":
+    
     try:
-        main()
+        current_info = readInfo(current_info_path)
+        process_chat_record(chat_record_path, current_info['time'])
+        log_current_info(current_info, log_type="all")
+        write_current_info(current_info_path, current_info)  # Update 当前信息.txt with current_info values
     except Exception as e:
         error_message = f"运行失败: {str(e)}"
-        # if not show_error_prompt(error_message):
         messagebox.showerror("错误", error_message)
+        
+        truncate_log_file("log/log_append.txt", initial_append_log_lines)
+        restore_customer_files(customer_files_backup)
+        
         raise e  # Raise the exception to exit with a non-zero code
+
+if __name__ == "__main__":
+    main()

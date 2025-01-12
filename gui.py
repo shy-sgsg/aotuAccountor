@@ -2,7 +2,7 @@
 Author: shysgsg 1054733568@qq.com
 Date: 2025-01-10 22:58:25
 LastEditors: shysgsg 1054733568@qq.com
-LastEditTime: 2025-01-12 23:22:22
+LastEditTime: 2025-01-12 23:32:24
 FilePath: \autoAccountor\gui.py
 Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 '''
@@ -21,6 +21,7 @@ def run_script():
         if result.returncode == 0:
             current_file_path = 'F:/autoAccountor/log/log_overwrite.txt'  # Update the current file path
             update_display(current_file_path)  # Update display to show log_overwrite.txt
+            messagebox.askyesno("成功", "运行成功")
         else:
             # error_message = f"脚本执行失败:\n{result.stderr}"
             current_file_path = 'F:/autoAccountor/log/log_overwrite.txt'  # Update the current file path
@@ -38,23 +39,26 @@ def open_customers_folder():
         messagebox.showerror("错误", f"打开文件夹失败:\n{str(e)}")
 
 def open_log_append():
+    global current_file_path
     try:
-        os.startfile('F:/autoAccountor/log/log_append.txt')
+        current_file_path = 'F:/autoAccountor/log/log_append.txt'
+        update_display(current_file_path)
     except Exception as e:
         messagebox.showerror("错误", f"打开日志文件失败:\n{str(e)}")
 
 def open_current_info():
     global current_file_path
     try:
-        os.startfile('F:/autoAccountor/info/当前信息.txt')
-        current_file_path = 'F:/autoAccountor/info/当前信息.txt'  # Update the current file path
-        update_display(current_file_path)  # Update display to show 当前信息.txt
+        current_file_path = 'F:/autoAccountor/info/当前信息.txt'
+        update_display(current_file_path)
     except Exception as e:
         messagebox.showerror("错误", f"打开当前信息文件失败:\n{str(e)}")
 
 def open_chat_record():
+    global current_file_path
     try:
-        os.startfile('D:/MemoTrace/data/聊天记录/聚财浮球报账群(34375022090@chatroom)/聚财浮球报账群.txt')
+        current_file_path = 'D:/MemoTrace/data/聊天记录/聚财浮球报账群(34375022090@chatroom)/聚财浮球报账群.txt'
+        update_display(current_file_path)
     except Exception as e:
         messagebox.showerror("错误", f"打开聊天记录文件失败:\n{str(e)}")
 
