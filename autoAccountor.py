@@ -2,7 +2,7 @@
 Author: shysgsg 1054733568@qq.com
 Date: 2025-01-10 17:13:47
 LastEditors: shysgsg 1054733568@qq.com
-LastEditTime: 2025-01-13 00:03:01
+LastEditTime: 2025-01-13 18:27:30
 FilePath: \autoAccountor\autoAccountor.py
 Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 '''
@@ -24,18 +24,20 @@ sys.stdout.reconfigure(encoding='utf-8')
 LOGGING_APPEND_ENABLED = True
 LOGGING_OVERWRITE_ENABLED = True
 
+current_info = {}
+
 def show_error_prompt(error_message):
     """Show an error prompt with the option to ignore and continue."""
     return messagebox.askyesno("错误", f"{error_message}\n是否忽略错误并继续执行？")
 
-def readInfo(file_path):
+def read_current_info(file_path):
     """Read current information from the specified file and return it as a dictionary."""
+    global current_info
     data = {}
     with open(file_path, 'r', encoding='utf-8') as file:
         lines = file.readlines()
         for line in lines:
             if "截止" in line:
-                # Extract time information
                 time_str = line.strip().split("截止 ")[1]
                 try:
                     datetime.datetime.strptime(time_str, "%Y-%m-%d %H:%M:%S")
@@ -45,19 +47,44 @@ def readInfo(file_path):
                     if not show_error_prompt(error_message):
                         raise ValueError(error_message)
             elif "账户余额" in line:
-                # Extract account balance information and convert to integer
                 balance_str = line.strip().split("账户余额：")[1].replace("元", "")
                 data['balance'] = int(balance_str)
             elif "小球库存" in line:
-                # Extract small ball stock information and convert to integer
                 small_ball_str = line.strip().split("小球库存：")[1].replace("包", "")
                 data['small_ball_stock'] = int(small_ball_str)
             elif "大球库存" in line:
-                # Extract big ball stock information and convert to integer
-                big_ball_2_5_str = line.strip().split("大球库存：")[1].replace("包", "")
-                data['big_ball_stock'] = int(big_ball_2_5_str)
-    log_current_info(data, log_type="overwrite")
+                big_ball_str = line.strip().split("大球库存：")[1].replace("包", "")
+                data['big_ball_stock'] = int(big_ball_str)
+    current_info = data
     return data
+
+def write_current_info(file_path, data):
+    """Write the current information to the specified file."""
+    global current_info
+    with open(file_path, 'w', encoding='utf-8') as file:
+        file.write(
+            f"截止 {data['time']}\n"
+            f"账户余额：{data['balance']}元\n"
+            f"小球库存：{data['small_ball_stock']}包\n"
+            f"大球库存：{data['big_ball_stock']}包\n"
+        )
+    current_info = data
+
+def log_current_info(data, log_type="all"):
+    """Log the current information to the specified log type."""
+    info_str = (
+        f"截止 {data['time']}\n"
+        f"账户余额：{data['balance']}元\n"
+        f"小球库存：{data['small_ball_stock']}包\n"
+        f"大球库存：{data['big_ball_stock']}包"
+    )
+    if log_type == "all":
+        write_log_append(info_str)
+        write_log_overwrite(info_str)
+    elif log_type == "append":
+        write_log_append(info_str)
+    elif log_type == "overwrite":
+        write_log_overwrite(info_str)
 
 def locate_chat_record(chat_record_path, time):
     """Locate the chat record line that is after the specified time."""
@@ -103,41 +130,6 @@ def adjust_to_fixed_length(message, fixed_length):
             message = message[:-1]
     return message
 
-def log_current_info(data, log_type="all"):
-    """Log the current information to the specified log type."""
-    info_str = (
-        f"截止 {data['time']}\n"
-        f"账户余额：{data['balance']}元\n"
-        f"小球库存：{data['small_ball_stock']}包\n"
-        f"大球库存：{data['big_ball_stock']}包"
-    )
-    if log_type == "all":
-        write_log_append(info_str)
-        write_log_overwrite(info_str)
-    elif log_type == "append":
-        write_log_append(info_str)
-    elif log_type == "overwrite":
-        write_log_overwrite(info_str)
-
-def write_current_info(file_path, data):
-    """Write the current information to the specified file."""
-    with open(file_path, 'w', encoding='utf-8') as file:
-        file.write(
-            f"截止 {data['time']}\n"
-            f"账户余额：{data['balance']}元\n"
-            f"小球库存：{data['small_ball_stock']}包\n"
-            f"大球库存：{data['big_ball_stock']}包\n"
-            
-        )
-
-def extract_number(text):
-    """Extract the first number found in the text."""
-    text_copy = re.sub(r'\d{1,2}\.\d{1,2}|\d+年', '', text)
-    match = re.search(r'\d+', text_copy)
-    if match:
-        return int(match.group(0))
-    return 0
-
 def process_message(line):
     """Process a single message line and update the current information."""
     global current_info
@@ -156,18 +148,14 @@ def process_message(line):
         '小球出库': r'仓库发|仓库'
     }
 
-    # Check for clear account flag
     if re.search(r'清账|全清|已清|至.*清账', line):
         clear_account_flag = 1
 
-    # Remove commas not between "包" and "费" or after "元"
     line = re.sub(r'(?<!包)(?<!元)，(?!费)', '', line)
 
-    # Remove content before "一共"
     if re.search(r'一共', line):
         line = re.sub(r'.*一共', '一共', line)
 
-    # Split the line by commas and process each part separately
     parts = line.split('，')
     for part in parts:
         for message_type, pattern in patterns.items():
@@ -176,7 +164,7 @@ def process_message(line):
                     quantity = extract_number(part)
                 else:
                     if re.search(r'(\d+)元', part):
-                        quantity = int(re.search(r'(\d+)元', part).group(1))  # Corrected to group(1)
+                        quantity = int(re.search(r'(\d+)元', part).group(1))
                     elif re.search(r'(\d+)万', part):
                         quantity = int(re.search(r'(\d+)万', part).group(1)) * 10000
                     elif re.search(r'一共(\d+)', part):
@@ -237,6 +225,14 @@ def process_message(line):
             error_message = f"错误: 未知的消息类型: {part}"
             if not show_error_prompt(error_message):
                 raise ValueError(error_message)
+
+def extract_number(text):
+    """Extract the first number found in the text."""
+    text_copy = re.sub(r'\d{1,2}\.\d{1,2}|\d+年', '', text)
+    match = re.search(r'\d+', text_copy)
+    if match:
+        return int(match.group(0))
+    return 0
 
 def extract_customer_name(text):
     """Extract the customer name from the text."""
@@ -346,7 +342,7 @@ def main():
             log_file.write("")
     
     try:
-        current_info = readInfo(current_info_path)
+        current_info = read_current_info(current_info_path)
         process_chat_record(chat_record_path, current_info['time'])
         log_current_info(current_info, log_type="all")
         write_current_info(current_info_path, current_info)  # Update 当前信息.txt with current_info values

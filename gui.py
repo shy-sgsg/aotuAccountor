@@ -2,7 +2,7 @@
 Author: shysgsg 1054733568@qq.com
 Date: 2025-01-10 22:58:25
 LastEditors: shysgsg 1054733568@qq.com
-LastEditTime: 2025-01-13 00:21:16
+LastEditTime: 2025-01-13 18:27:24
 FilePath: \autoAccountor\gui.py
 Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 '''
@@ -42,6 +42,18 @@ def run_process_customers():
             display_text.insert(tk.END, result.stdout)
         else:
             messagebox.showerror("错误", f"运行 process_customers.py 失败:\n{result.stderr}")
+    except Exception as e:
+        messagebox.showerror("错误", f"发生错误:\n{str(e)}")
+
+def run_single_message_processor():
+    """Run the single_message_processor.py script."""
+    try:
+        result = subprocess.run(['python', 'F:/autoAccountor/single_message_processor.py'], capture_output=True, text=True, encoding='utf-8')
+        # if result.returncode == 0:
+            # pass
+            # messagebox.showinfo("成功", "单步消息处理成功")
+        # else:
+            # messagebox.showerror("错误", f"运行 single_message_processor.py 失败:\n{result.stderr}")
     except Exception as e:
         messagebox.showerror("错误", f"发生错误:\n{str(e)}")
 
@@ -114,20 +126,23 @@ button_frame2.pack(pady=10)
 run_button = ttk.Button(button_frame1, text="更新记账", command=run_script)
 run_button.pack(side=tk.LEFT, padx=5)
 
-open_folder_button = ttk.Button(button_frame1, text="打开 customers 文件夹", command=open_customers_folder)
+open_folder_button = ttk.Button(button_frame1, text="打开客户文件夹", command=open_customers_folder)
 open_folder_button.pack(side=tk.LEFT, padx=5)
 
-open_log_button = ttk.Button(button_frame1, text="打开 log_append.txt", command=open_log_append)
+open_log_button = ttk.Button(button_frame1, text="打开日志文件", command=open_log_append)
 open_log_button.pack(side=tk.LEFT, padx=5)
 
-open_info_button = ttk.Button(button_frame1, text="打开 当前信息.txt", command=open_current_info)
+open_info_button = ttk.Button(button_frame1, text="打开当前信息", command=open_current_info)
 open_info_button.pack(side=tk.LEFT, padx=5)
 
-open_chat_button = ttk.Button(button_frame1, text="打开 聊天记录.txt", command=open_chat_record)
+open_chat_button = ttk.Button(button_frame1, text="打开聊天记录", command=open_chat_record)
 open_chat_button.pack(side=tk.LEFT, padx=5)
 
 process_customers_button = ttk.Button(button_frame2, text="合计总球数", command=run_process_customers)
 process_customers_button.pack(side=tk.LEFT, padx=5)
+
+single_message_button = ttk.Button(button_frame2, text="单步执行", command=run_single_message_processor)
+single_message_button.pack(side=tk.LEFT, padx=5)
 
 save_button = ttk.Button(button_frame2, text="保存当前信息", command=save_current_info)
 save_button.pack(side=tk.LEFT, padx=5)

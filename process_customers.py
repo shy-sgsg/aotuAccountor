@@ -12,6 +12,11 @@ import sys
 
 sys.stdout.reconfigure(encoding='utf-8')
 
+from autoAccountor import read_current_info, write_current_info
+
+current_info_path = 'F:/autoAccountor/info/当前信息.txt'
+current_info = read_current_info(current_info_path)
+
 def process_customer_file(file_path):
     """Process a single customer file and return the total number of packages."""
     total = 0
@@ -35,10 +40,12 @@ def process_all_customers(folder_path):
 
 def main():
     """Main function to process all customer files and print the totals."""
+    global current_info
     folder_path = 'F:/autoAccountor/customers'
     customer_totals = process_all_customers(folder_path)
     for customer, total in customer_totals.items():
         print(f"{customer}: {total}包")
+    write_current_info(current_info_path, current_info)
 
 if __name__ == "__main__":
     main()
