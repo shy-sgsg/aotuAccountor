@@ -2,7 +2,7 @@
 Author: shysgsg 1054733568@qq.com
 Date: 2025-01-10 17:13:47
 LastEditors: shysgsg 1054733568@qq.com
-LastEditTime: 2025-01-15 13:51:23
+LastEditTime: 2025-01-15 18:43:34
 FilePath: \autoAccountor\autoAccountor.py
 Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 '''
@@ -25,12 +25,6 @@ LOGGING_APPEND_ENABLED = True
 LOGGING_OVERWRITE_ENABLED = True
 
 current_info = {}
-customer_debts = {}
-customer_prices = {
-    '小球': {},
-    '大球2.5': {},
-    '大球3.2': {}
-}
 
 def show_error_prompt(error_message):
     """Show an error prompt with the option to ignore and continue."""
@@ -136,25 +130,9 @@ def adjust_to_fixed_length(message, fixed_length):
             message = message[:-1]
     return message
 
-def read_prices(file_path):
-    """Read prices from the specified file and update the customer_prices dictionary."""
-    global customer_prices
-    with open(file_path, 'r', encoding='utf-8') as file:
-        lines = file.readlines()
-        current_customer = None
-        for line in lines:
-            if line.startswith("客户:"):
-                current_customer = line.split(":")[1].strip()
-            elif current_customer and "小球" in line:
-                customer_prices['小球'][current_customer] = int(re.search(r'\d+', line).group())
-            elif current_customer and "大球2.5" in line:
-                customer_prices['大球2.5'][current_customer] = int(re.search(r'\d+', line).group())
-            elif current_customer and "大球3.2" in line:
-                customer_prices['大球3.2'][current_customer] = int(re.search(r'\d+', line).group())
-
 def process_message(line):
     """Process a single message line and update the current information."""
-    global current_info, customer_debts
+    global current_info
     quantity = 0
     log_message = None
     customer_name = None
@@ -165,8 +143,8 @@ def process_message(line):
         '支出': r'(\d+)元|(\d+)万|一共(\d+)',
         '大球入库': r'大球.*入库|入库.*大球|大球入库',
         '小球入库': r'入库',
-        '大球3.2出库': r'仓库发3.2|仓库3.2',
-        '大球2.5出库': r'仓库发2.5|仓库2.5',
+        '大球3.2出库': r'仓库发.*3.2|仓库.*3.2',
+        '大球2.5出库': r'仓库发.*2.5|仓库.*2.5',
         '小球出库': r'仓库发|仓库'
     }
 
@@ -203,8 +181,6 @@ def process_message(line):
                     current_info['balance'] += quantity
                     log_message = f" 收入: {quantity}"
                     customer_name = extract_customer_name(part)
-                    if customer_name:
-                        customer_debts[customer_name] = customer_debts.get(customer_name, 0) - quantity
                     break
                 elif message_type == '支出':
                     current_info['balance'] -= quantity
@@ -218,9 +194,6 @@ def process_message(line):
                     current_info['small_ball_stock'] -= quantity
                     log_message = f" 小球出库: {quantity}"
                     customer_name = extract_customer_name(part)
-                    if customer_name:
-                        price = customer_prices['小球'].get(customer_name, 100)
-                        customer_debts[customer_name] = customer_debts.get(customer_name, 0) + quantity * price
                     break
                 elif message_type == '大球入库':
                     current_info['big_ball_stock'] += quantity
@@ -230,17 +203,11 @@ def process_message(line):
                     current_info['big_ball_stock'] -= quantity
                     log_message = f" 大球2.5出库: {quantity}"
                     customer_name = extract_customer_name(part)
-                    if customer_name:
-                        price = customer_prices['大球2.5'].get(customer_name, 200)
-                        customer_debts[customer_name] = customer_debts.get(customer_name, 0) + quantity * price
                     break
                 elif message_type == '大球3.2出库':
                     current_info['big_ball_stock'] -= quantity
                     log_message = f" 大球3.2出库: {quantity}"
                     customer_name = extract_customer_name(part)
-                    if customer_name:
-                        price = customer_prices['大球3.2'].get(customer_name, 300)
-                        customer_debts[customer_name] = customer_debts.get(customer_name, 0) + quantity * price
                     break
         if log_message:
             write_log_append(log_message)
@@ -258,10 +225,6 @@ def process_message(line):
             error_message = f"错误: 未知的消息类型: {part}"
             if not show_error_prompt(error_message):
                 raise ValueError(error_message)
-
-    if clear_account_flag and customer_name:
-        customer_debts[customer_name] = 0
-        log_to_customer_file(customer_name, "清账", line)
 
 def extract_number(text):
     """Extract the first number found in the text."""
@@ -300,10 +263,9 @@ def log_to_customer_file(customer_name, message, line):
     else:
         formatted_message = f"错误：未找到日期"
         print(Fore.RED + f"错误: 未找到日期: {line}")
-    debt_message = f" 当前欠款：{customer_debts[customer_name]}元"
     customer_file_path = f"customers/{customer_name}.txt"
     with open(customer_file_path, 'a', encoding='utf-8') as file:
-        file.write(formatted_message + debt_message + '\n')
+        file.write(formatted_message + '\n')
 
 def is_time_line(line):
     """Check if the line contains a timestamp."""
@@ -368,10 +330,9 @@ def restore_customer_files(customer_files):
 
 def main():
     """Main function to execute the script."""
-    global current_info, customer_debts
+    global current_info
     current_info_path = "info/当前信息.txt"
-    chat_record_path = "data/聊天记录/聚财浮球报账群(34375022090@chatroom)/聚财浮球报账群.txt"
-    price_info_path = "info/价格.txt"
+    chat_record_path = "D:/MemoTrace/data/聊天记录/聚财浮球报账群(34375022090@chatroom)/聚财浮球报账群.txt"
     
     initial_append_log_lines = get_log_line_count("log/log_append.txt")
     customer_files_backup = backup_customer_files()
@@ -382,7 +343,6 @@ def main():
     
     try:
         current_info = read_current_info(current_info_path)
-        read_prices(price_info_path)
         process_chat_record(chat_record_path, current_info['time'])
         log_current_info(current_info, log_type="all")
         write_current_info(current_info_path, current_info)  # Update 当前信息.txt with current_info values
