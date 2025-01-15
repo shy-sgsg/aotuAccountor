@@ -2,7 +2,7 @@
 Author: shysgsg 1054733568@qq.com
 Date: 2025-01-10 22:58:25
 LastEditors: shysgsg 1054733568@qq.com
-LastEditTime: 2025-01-13 18:27:24
+LastEditTime: 2025-01-15 11:32:28
 FilePath: \autoAccountor\gui.py
 Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 '''
@@ -54,6 +54,17 @@ def run_single_message_processor():
             # messagebox.showinfo("成功", "单步消息处理成功")
         # else:
             # messagebox.showerror("错误", f"运行 single_message_processor.py 失败:\n{result.stderr}")
+    except Exception as e:
+        messagebox.showerror("错误", f"发生错误:\n{str(e)}")
+
+def run_wechat_script():
+    """Run the wechat_script.py script."""
+    try:
+        result = subprocess.run(['python', 'F:/autoAccountor/tools/wechat_script.py'], capture_output=True, text=True, encoding='utf-8')
+        if result.returncode == 0:
+            messagebox.showinfo("成功", "更新聊天记录成功")
+        else:
+            messagebox.showerror("错误", f"运行 wechat_script.py 失败:\n{result.stderr}")
     except Exception as e:
         messagebox.showerror("错误", f"发生错误:\n{str(e)}")
 
@@ -122,6 +133,9 @@ button_frame1.pack(pady=10)
 
 button_frame2 = ttk.Frame(app)
 button_frame2.pack(pady=10)
+
+update_chat_button = ttk.Button(button_frame2, text="更新聊天记录", command=run_wechat_script)
+update_chat_button.pack(side=tk.LEFT, padx=5)
 
 run_button = ttk.Button(button_frame1, text="更新记账", command=run_script)
 run_button.pack(side=tk.LEFT, padx=5)
