@@ -2,7 +2,7 @@
 Author: shysgsg 1054733568@qq.com
 Date: 2025-01-10 17:13:47
 LastEditors: shysgsg 1054733568@qq.com
-LastEditTime: 2025-01-15 18:43:34
+LastEditTime: 2025-01-13 18:27:30
 FilePath: \autoAccountor\autoAccountor.py
 Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 '''
@@ -143,8 +143,8 @@ def process_message(line):
         '支出': r'(\d+)元|(\d+)万|一共(\d+)',
         '大球入库': r'大球.*入库|入库.*大球|大球入库',
         '小球入库': r'入库',
-        '大球3.2出库': r'仓库发.*3.2|仓库.*3.2',
-        '大球2.5出库': r'仓库发.*2.5|仓库.*2.5',
+        '大球3.2出库': r'仓库发3.2|仓库3.2',
+        '大球2.5出库': r'仓库发2.5|仓库2.5',
         '小球出库': r'仓库发|仓库'
     }
 
