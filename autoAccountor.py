@@ -2,7 +2,7 @@
 Author: shysgsg 1054733568@qq.com
 Date: 2025-01-10 17:13:47
 LastEditors: shysgsg 1054733568@qq.com
-LastEditTime: 2025-01-13 18:27:30
+LastEditTime: 2025-01-25 00:10:36
 FilePath: \autoAccountor\autoAccountor.py
 Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 '''
@@ -13,6 +13,7 @@ import os
 from colorama import init, Fore
 from wcwidth import wcswidth
 from tkinter import messagebox, Tk
+import pandas as pd
 
 # Initialize Tkinter root
 root = Tk()
@@ -34,7 +35,7 @@ def read_current_info(file_path):
     """Read current information from the specified file and return it as a dictionary."""
     global current_info
     data = {}
-    with open(file_path, 'r', encoding='utf-8') as file:
+    with open(file_path, 'r', encoding='utf-8', errors='ignore') as file:
         lines = file.readlines()
         for line in lines:
             if "截止" in line:
@@ -89,7 +90,7 @@ def log_current_info(data, log_type="all"):
 def locate_chat_record(chat_record_path, time):
     """Locate the chat record line that is after the specified time."""
     target_time = datetime.datetime.strptime(time, "%Y-%m-%d %H:%M:%S")
-    with open(chat_record_path, 'r', encoding='utf-8') as file:
+    with open(chat_record_path, 'r', encoding='utf-8', errors='ignore') as file:
         lines = file.readlines()
         for i in range(len(lines)):
             parts = lines[i].strip().split()
@@ -107,7 +108,7 @@ def locate_chat_record(chat_record_path, time):
 def write_log_append(message, newline=True, fixed_length=None):
     """Write a message to the append log file."""
     if LOGGING_APPEND_ENABLED:
-        with open("log/log_append.txt", "a", encoding="utf-8") as log_file:
+        with open("log/log_append.txt", "a", encoding="utf-8", errors='ignore') as log_file:
             if fixed_length:
                 message = adjust_to_fixed_length(message, fixed_length)
             log_file.write(message + ("\n" if newline else ""))
@@ -115,7 +116,7 @@ def write_log_append(message, newline=True, fixed_length=None):
 def write_log_overwrite(message, mode="a", newline=True, fixed_length=None):
     """Write a message to the overwrite log file."""
     if LOGGING_OVERWRITE_ENABLED:
-        with open("log/log_overwrite.txt", mode, encoding="utf-8") as log_file:
+        with open("log/log_overwrite.txt", mode, encoding="utf-8", errors='ignore') as log_file:
             if fixed_length:
                 message = adjust_to_fixed_length(message, fixed_length)
             log_file.write(message + ("\n" if newline else ""))
@@ -213,11 +214,7 @@ def process_message(line):
             write_log_append(log_message)
             write_log_overwrite(log_message)
             if customer_name:
-                if message_type == '收入': 
-                    log_message = re.sub(r'入', '', log_message) + '元'
-                else:
-                    log_message = '发' + re.sub(r'出库', '', log_message) + '包'
-                log_to_customer_file(customer_name, log_message, part)
+                log_to_customer_excel(customer_name, message_type, quantity, part)
         elif not clear_account_flag:
             log_message = "错误: 未知的消息类型"
             write_log_append(log_message)
@@ -255,17 +252,33 @@ def extract_date(text):
         return match.group(0)
     return None
 
-def log_to_customer_file(customer_name, message, line):
-    """Log the message to the customer's file."""
+def log_to_customer_excel(customer_name, message_type, quantity, line):
+    """Log the message to the customer's Excel file."""
     date = extract_date(line)
-    if date:
-        formatted_message = f"{date}号 {message}"
+    if not date:
+        date = current_info['time'][5:16]  # Use the message record's time if date extraction fails
+    
+    customer_file_path = f"customers/{customer_name}.xlsx"
+    if os.path.exists(customer_file_path):
+        try:
+            df = pd.read_excel(customer_file_path)
+        except PermissionError:
+            print(Fore.RED + f"错误: 无法读取文件: {customer_file_path}")
+            return
     else:
-        formatted_message = f"错误：未找到日期"
-        print(Fore.RED + f"错误: 未找到日期: {line}")
-    customer_file_path = f"customers/{customer_name}.txt"
-    with open(customer_file_path, 'a', encoding='utf-8') as file:
-        file.write(formatted_message + '\n')
+        df = pd.DataFrame(columns=['日期', '收入', '小球出库', '大球2.5出库', '大球3.2出库'])
+    
+    new_row = pd.DataFrame({'日期': [date], message_type: [quantity]})
+    df = pd.concat([df, new_row], ignore_index=True)
+    
+    # Force the date column to be text type and other columns to be numeric type
+    for col in df.columns:
+        if col == '日期':
+            df[col] = df[col].astype(str)
+        else:
+            df[col] = pd.to_numeric(df[col], errors='coerce')
+    
+    df.to_excel(customer_file_path, index=False)
 
 def is_time_line(line):
     """Check if the line contains a timestamp."""
@@ -278,7 +291,7 @@ def process_chat_record(chat_record_path, target_time):
     if start_line == -1:
         write_log_overwrite("未找到目标时间之后的记录。\n\n\n")
         sys.exit(0)  # Safely exit the program
-    with open(chat_record_path, 'r', encoding='utf-8') as file:
+    with open(chat_record_path, 'r', encoding='utf-8', errors='ignore') as file:
         lines = file.readlines()
         for i in range(start_line, len(lines)):
             line = lines[i].strip()
@@ -301,12 +314,12 @@ def process_chat_record(chat_record_path, target_time):
 
 def get_log_line_count(log_file_path):
     """Get the number of lines in the log file."""
-    with open(log_file_path, 'r', encoding='utf-8') as log_file:
+    with open(log_file_path, 'r', encoding='utf-8', errors='ignore') as log_file:
         return len(log_file.readlines())
 
 def truncate_log_file(log_file_path, line_count):
     """Truncate the log file to the specified number of lines."""
-    with open(log_file_path, 'r+', encoding='utf-8') as log_file:
+    with open(log_file_path, 'r+', encoding='utf-8', errors='ignore') as log_file:
         lines = log_file.readlines()
         log_file.seek(0)
         log_file.writelines(lines[:line_count])
@@ -316,17 +329,18 @@ def backup_customer_files():
     """Backup the contents of all customer files."""
     customer_files = {}
     for filename in os.listdir("customers"):
-        if filename.endswith(".txt"):
+        if filename.endswith(".xlsx"):
             file_path = os.path.join("customers", filename)
-            with open(file_path, 'r', encoding='utf-8') as file:
-                customer_files[file_path] = file.readlines()
+            try:
+                customer_files[file_path] = pd.read_excel(file_path)
+            except PermissionError:
+                print(Fore.RED + f"错误: 无法读取文件: {file_path}")
     return customer_files
 
 def restore_customer_files(customer_files):
     """Restore the contents of all customer files from the backup."""
-    for file_path, lines in customer_files.items():
-        with open(file_path, 'w', encoding='utf-8') as file:
-            file.writelines(lines)
+    for file_path, df in customer_files.items():
+        df.to_excel(file_path, index=False)
 
 def main():
     """Main function to execute the script."""
