@@ -2,7 +2,7 @@
 Author: shysgsg 1054733568@qq.com
 Date: 2025-01-10 22:58:25
 LastEditors: shysgsg 1054733568@qq.com
-LastEditTime: 2025-01-13 18:27:24
+LastEditTime: 2025-02-14 18:52:33
 FilePath: \autoAccountor\gui.py
 Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 '''

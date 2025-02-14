@@ -2,7 +2,7 @@
 Author: shysgsg 1054733568@qq.com
 Date: 2025-01-10 17:13:47
 LastEditors: shysgsg 1054733568@qq.com
-LastEditTime: 2025-02-14 18:42:57
+LastEditTime: 2025-02-14 18:48:34
 FilePath: \autoAccountor\autoAccountor.py
 Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 '''
@@ -112,6 +112,7 @@ def write_log_append(message, newline=True, fixed_length=None):
             if fixed_length:
                 message = adjust_to_fixed_length(message, fixed_length)
             log_file.write(message + ("\n" if newline else ""))
+        log_to_excel("log/log_append.xlsx", message)
 
 def write_log_overwrite(message, mode="a", newline=True, fixed_length=None):
     """Write a message to the overwrite log file."""
@@ -120,6 +121,7 @@ def write_log_overwrite(message, mode="a", newline=True, fixed_length=None):
             if fixed_length:
                 message = adjust_to_fixed_length(message, fixed_length)
             log_file.write(message + ("\n" if newline else ""))
+        # log_to_excel("log/log_overwrite.xlsx", message)
 
 def adjust_to_fixed_length(message, fixed_length):
     """Adjust the message to a fixed length by padding or truncating."""
@@ -130,6 +132,16 @@ def adjust_to_fixed_length(message, fixed_length):
         while wcswidth(message) > fixed_length:
             message = message[:-1]
     return message
+
+def log_to_excel(file_path, message):
+    """Log the message to an Excel file."""
+    if os.path.exists(file_path):
+        df = pd.read_excel(file_path)
+    else:
+        df = pd.DataFrame(columns=['日志'])
+    new_row = pd.DataFrame({'日志': [message]})
+    df = pd.concat([df, new_row], ignore_index=True)
+    df.to_excel(file_path, index=False)
 
 def process_message(line):
     """Process a single message line and update the current information."""
@@ -346,7 +358,7 @@ def main():
     """Main function to execute the script."""
     global current_info
     current_info_path = "info/当前信息.txt"
-    chat_record_path = "F:/autoAccountor/data/聊天记录/聚财浮球报账群(34375022090@chatroom)/聚财浮球报账群.txt"
+    chat_record_path = "D:/MemoTrace/data/聊天记录/聚财浮球报账群(34375022090@chatroom)/聚财浮球报账群.txt"
     
     initial_append_log_lines = get_log_line_count("log/log_append.txt")
     customer_files_backup = backup_customer_files()
