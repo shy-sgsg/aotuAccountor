@@ -2,7 +2,7 @@
 Author: shysgsg 1054733568@qq.com
 Date: 2025-01-10 17:13:47
 LastEditors: shysgsg 1054733568@qq.com
-LastEditTime: 2025-01-25 00:10:36
+LastEditTime: 2025-02-14 18:42:57
 FilePath: \autoAccountor\autoAccountor.py
 Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 '''
@@ -346,7 +346,7 @@ def main():
     """Main function to execute the script."""
     global current_info
     current_info_path = "info/当前信息.txt"
-    chat_record_path = "D:/MemoTrace/data/聊天记录/聚财浮球报账群(34375022090@chatroom)/聚财浮球报账群.txt"
+    chat_record_path = "F:/autoAccountor/data/聊天记录/聚财浮球报账群(34375022090@chatroom)/聚财浮球报账群.txt"
     
     initial_append_log_lines = get_log_line_count("log/log_append.txt")
     customer_files_backup = backup_customer_files()

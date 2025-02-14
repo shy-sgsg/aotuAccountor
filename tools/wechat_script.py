@@ -1,14 +1,18 @@
-'''
-Author: shysgsg 1054733568@qq.com
-Date: 2025-01-14 17:13:56
-LastEditors: shysgsg 1054733568@qq.com
-LastEditTime: 2025-01-15 00:42:05
-FilePath: \autoAccountor\wechat_script.py
-Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
-'''
 import os
+import sys
 import time
-import pyautogui
+
+try:
+    import pyautogui
+except ImportError:
+    print("pyautogui module is not installed. Please install it using 'pip install pyautogui'")
+    sys.exit(1)
+
+try:
+    import cv2
+except ImportError:
+    print("opencv-python module is not installed. Please install it using 'pip install opencv-python'")
+    sys.exit(1)
 
 # Define base paths
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))

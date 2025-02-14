@@ -86,7 +86,7 @@ def open_chat_record():
     """Open the chat record file and update the display."""
     global current_file_path
     try:
-        current_file_path = 'D:/MemoTrace/data/聊天记录/聚财浮球报账群(34375022090@chatroom)/聚财浮球报账群.txt'
+        current_file_path = 'F:/autoAccountor/data/聊天记录/聚财浮球报账群(34375022090@chatroom)/聚财浮球报账群.txt'
         update_display(current_file_path)
     except Exception as e:
         messagebox.showerror("错误", f"打开聊天记录文件失败:\n{str(e)}")
