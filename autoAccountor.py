@@ -2,7 +2,7 @@
 Author: shysgsg 1054733568@qq.com
 Date: 2025-01-10 17:13:47
 LastEditors: shysgsg 1054733568@qq.com
-LastEditTime: 2025-02-14 18:54:38
+LastEditTime: 2025-02-15 20:46:49
 FilePath: \autoAccountor\autoAccountor.py
 Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 '''
@@ -112,7 +112,7 @@ def write_log_append(message, newline=True, fixed_length=None):
             if fixed_length:
                 message = adjust_to_fixed_length(message, fixed_length)
             log_file.write(message + ("\n" if newline else ""))
-        log_to_excel("log/log_append.xlsx", message)
+        # log_to_excel("log/log_append.xlsx", message)
 
 def write_log_overwrite(message, mode="a", newline=True, fixed_length=None):
     """Write a message to the overwrite log file."""
@@ -134,14 +134,37 @@ def adjust_to_fixed_length(message, fixed_length):
     return message
 
 def log_to_excel(file_path, message):
-    """Log the message to an Excel file."""
+    """Log the message to an Excel file with each message type as a column."""
+    message_type, quantity = extract_message_type_and_quantity(message)
+    if not message_type or quantity is None:
+        return
+
     if os.path.exists(file_path):
         df = pd.read_excel(file_path)
     else:
-        df = pd.DataFrame(columns=['日志'])
-    new_row = pd.DataFrame({'日志': [message]})
+        df = pd.DataFrame(columns=['日期', '收入', '支出', '小球入库', '小球出库', '大球入库', '大球2.5出库', '大球3.2出库'])
+
+    date = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    new_row = pd.DataFrame({'日期': [date], message_type: [quantity]})
     df = pd.concat([df, new_row], ignore_index=True)
     df.to_excel(file_path, index=False)
+
+def extract_message_type_and_quantity(message):
+    """Extract the message type and quantity from the log message."""
+    patterns = {
+        '收入': r'收入: (\d+)',
+        '支出': r'支出: (\d+)',
+        '小球入库': r'小球入库: (\d+)',
+        '小球出库': r'小球出库: (\d+)',
+        '大球入库': r'大球入库: (\d+)',
+        '大球2.5出库': r'大球2.5出库: (\d+)',
+        '大球3.2出库': r'大球3.2出库: (\d+)'
+    }
+    for message_type, pattern in patterns.items():
+        match = re.search(pattern, message)
+        if match:
+            return message_type, int(match.group(1))
+    return None, None
 
 def process_message(line):
     """Process a single message line and update the current information."""
@@ -154,11 +177,11 @@ def process_message(line):
     patterns = {
         '收入': r'收.*(\d+)元',
         '支出': r'(\d+)元|(\d+)万|一共(\d+)',
-        '大球入库': r'大球.*入库|入库.*大球|大球入库',
+        '大球入库': r'大球.*入库|入库.*大球|2.5.*入库|3.2.*入库',
         '小球入库': r'入库',
         '大球3.2出库': r'仓库发3.2|仓库3.2',
         '大球2.5出库': r'仓库发2.5|仓库2.5',
-        '小球出库': r'仓库发|仓库'
+        '小球出库': r'仓库'
     }
 
     if re.search(r'清账|全清|已清|至.*清账', line):
